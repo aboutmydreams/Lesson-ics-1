@@ -39,10 +39,10 @@ def cread_event(lesson_name, classroom, teacher, start, end, freq=None):
     # 创建时间
     event.add('dtstamp', dt_now)
     event.add('LOCATION', classroom)
-    event.add('DESCRIPTION', '教师：' + teacher)
+    event.add('DESCRIPTION', f'教师：{teacher}')
 
     # UID保证唯一
-    event['uid'] = str(uuid.uuid1()) + '/wnma3mz@gmail.com'
+    event['uid'] = f'{str(uuid.uuid1())}/wnma3mz@gmail.com'
     if freq:
         event.add('rrule', freq)
     # event.add('priority', 5)
@@ -84,13 +84,11 @@ def get_week_lst(lesson):
     # 获取不规律课程的上课周数，一般是处理单双周字符串和只有单个数字的情况
     week_lst = []
     for item in lesson['week'].split(','):
-        if '-' not in item:
-            if item:
-                week_lst.append(item)
-        else:
+        if '-' in item:
             week1, week2 = item.split('-')
-            for i in range(int(week1), int(week2) + 1):
-                week_lst.append(i)
+            week_lst.extend(iter(range(int(week1), int(week2) + 1)))
+        elif item:
+            week_lst.append(item)
     return week_lst
 
 
@@ -100,19 +98,17 @@ def deal_week(tmp_week):
     if '(双周)' in tmp_week:
         tmp_week = tmp_week.replace('(双周)', '')
         start, end = tmp_week.split('-')
-        tmp_string = ''
-        for i in range(int(start), int(end) + 1):
-            if i % 2 == 0:
-                tmp_string += str(i) + ','
+        tmp_string = ''.join(
+            f'{str(i)},' for i in range(int(start), int(end) + 1) if i % 2 == 0
+        )
 
         tmp_week = tmp_string
     if '(单周)' in tmp_week:
         tmp_week = tmp_week.replace('(单周)', '')
         start, end = tmp_week.split('-')
-        tmp_string = ''
-        for i in range(int(start), int(end) + 1):
-            if i % 2 == 1:
-                tmp_string += str(i) + ','
+        tmp_string = ''.join(
+            f'{str(i)},' for i in range(int(start), int(end) + 1) if i % 2 == 1
+        )
 
         tmp_week = tmp_string
 
@@ -179,7 +175,7 @@ def get_lessons(username, password):
                 tmp_lst = insert_json(td, i)
                 cls_json[col] += tmp_lst
 
-    with open('{}.json'.format(username), 'w') as f:
+    with open(f'{username}.json', 'w') as f:
         json.dump(cls_json, f)
 
     return cls_json
@@ -188,7 +184,7 @@ def get_lessons(username, password):
 if __name__ == '__main__':
     username = 'username'
     password = 'password'
-    f_json = '{}.json'.format(username)
+    f_json = f'{username}.json'
     # 你的 cookie 或用户名密码
     cls_json = get_lessons(username, password)
     if cls_json == '用户名或密码错误':
@@ -206,8 +202,7 @@ if __name__ == '__main__':
     cal.add('prodid', '-//JH-L//JH-L Calendar//')
     cal.add('version', '2.0')
 
-    count = 0
-    for key, value in cls_json.items():
+    for count, (key, value) in enumerate(cls_json.items()):
         for lesson in value:
             if re.search(r'^\w+-\w+$', lesson['week']):
                 begin_week, end_week = lesson['week'].split('-')
@@ -218,7 +213,5 @@ if __name__ == '__main__':
                 week_lst = get_week_lst(lesson)
                 for week in week_lst:
                     init_event(cal, count, week, lesson)
-        count += 1
-
-    with open('{}.ics'.format(username), 'wb') as f:
+    with open(f'{username}.ics', 'wb') as f:
         f.write(cal.to_ical())

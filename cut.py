@@ -28,20 +28,16 @@ def trans_id(username, password):
     pwd = str(base64.b64encode(
         bytes(password, encoding='utf8')), encoding='utf8')
 
-    result = '{}%%%{}'.format(user, pwd)
-    return result
+    return f'{user}%%%{pwd}'
 
 
 # 识别验证码
 def get_captcha(img):
     # 导入模型名称
     def get_fname():
-        name_list = []
         path = 'mode/'
         dirs = os.listdir(path)
-        for dir_ in dirs:
-            name_list.append(dir_)
-        return name_list
+        return list(dirs)
     # 灰度化 切割 转化为数组模型
     img = img.convert('L')
     box1 = (4, 4, 12, 16)
@@ -81,8 +77,7 @@ def get_table(username, password):
     img = Image.open(BytesIO(response.content))
     # img.show()
     cookies = requests.utils.dict_from_cookiejar(response.cookies)
-    cookies = 'JSESSIONID={};SERVERID={}'.format(
-        cookies['JSESSIONID'], cookies['SERVERID'])
+    cookies = f"JSESSIONID={cookies['JSESSIONID']};SERVERID={cookies['SERVERID']}"
     post_url = 'http://jwc104.ncu.edu.cn:8081/jsxsd/xk/LoginToXk'
     headers['Cookie'] = cookies
 
